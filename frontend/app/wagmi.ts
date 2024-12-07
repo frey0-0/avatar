@@ -1,29 +1,38 @@
-import { http, cookieStorage, createConfig, createStorage } from 'wagmi';
-import { base } from 'wagmi/chains'; // add baseSepolia for testing
-import { coinbaseWallet } from 'wagmi/connectors';
- 
-export function getConfig() {
-  return createConfig({
-    chains: [base], // add baseSepolia for testing
-    connectors: [
-      coinbaseWallet({
-        appName: 'OnchainKit',
-        preference: 'smartWalletOnly',
-        version: '4',
-      }),
-    ],
-    storage: createStorage({
-      storage: cookieStorage,
-    }),
-    ssr: true,
-    transports: {
-      [base.id]: http(), // add baseSepolia for testing
+import { http, createConfig } from 'wagmi'
+import { base, optimism } from 'wagmi/chains'
+import { injected, metaMask, safe, walletConnect } from 'wagmi/connectors'
+import { getDefaultWallets, getDefaultConfig } from "@rainbow-me/rainbowkit"
+
+import {
+  argentWallet,
+  trustWallet,
+  ledgerWallet,
+} from "@rainbow-me/rainbowkit/wallets"
+import {
+  arbitrum,
+  arbitrumSepolia,
+  localhost,
+  mainnet,
+  sepolia,
+} from "wagmi/chains"
+
+const { wallets } = getDefaultWallets()
+
+const projectId = '61ce83245bfd18e6728a33c718b5946c'
+
+export const config = getDefaultConfig({
+  appName: "RainbowKit demo",
+  projectId: projectId,
+  wallets: [
+    ...wallets,
+    {
+      groupName: "Other",
+      wallets: [argentWallet, trustWallet, ledgerWallet],
     },
-  });
-}
- 
-declare module 'wagmi' {
-  interface Register {
-    config: ReturnType<typeof getConfig>;
-  }
-}
+  ],
+  chains: [
+    mainnet,
+    arbitrumSepolia, arbitrum, localhost,sepolia
+  ],
+  ssr: true,
+})

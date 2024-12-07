@@ -11,7 +11,7 @@ import {
   ListItemText, 
   Paper,
 } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import {  Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart } from 'recharts';
 
 interface Token {
   id: string;
@@ -43,7 +43,7 @@ const TokenList = () => {
     { name: 'Token C', priceFeed: '$5', marketplacePrice: '$4', rating: 3 },
     { name: 'Token D', priceFeed: '$15', marketplacePrice: '$14', rating: 2 },
   ]);
-
+ 
   const handleRatingChange = (index: number, rating: number) => {
     const updatedTokens = [...tokens];
     updatedTokens[index].rating = rating;
@@ -53,6 +53,14 @@ const TokenList = () => {
 
   return (
     <div className="flex flex-col space-y-4">
+    <LineChart width={500} height={300} data={mockChartData}>
+    <XAxis dataKey="name"/>
+    <YAxis/>
+    <CartesianGrid stroke="#eee" strokeDasharray="5 5"/>
+    <Line type="monotone" dataKey="uv" stroke="#8884d8" />
+    <Line type="monotone" dataKey="pv" stroke="#82ca9d" />
+  </LineChart>
+    
       <div className="flex items-center font-bold text-lg text-white bg-gray-700 p-4 rounded-lg">
         <span className="flex-1">Token Name</span>
         <span className="flex-1">Price Feed</span>

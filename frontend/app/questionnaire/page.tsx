@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import BackgroundAnimation from "../components/Background";
+import axios from 'axios';
 import questionsData from '../questions.json';
 
 interface Question {
@@ -18,14 +19,14 @@ const questions: Question[] = questionsData;
 export default function Questionnaire() {
   const router = useRouter();
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<string[]>([]);
   const [textInput, setTextInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleNext = () => {
     if (textInput.trim() !== "") {
-      setAnswers((prev) => ({ ...prev, [currentQuestion]: textInput }));
+      setAnswers((prev) => ([ ...prev, textInput ]));
       setTextInput("");
       
       if (currentQuestion < questions.length - 1) {
@@ -43,10 +44,22 @@ export default function Questionnaire() {
       setTextInput(answers[currentQuestion - 1] || "");
     }
   };
-
+const uploadQuestions = async () => {
+  console.log(answers);
+  const response = await axios.post('https://f23a-14-195-142-82.ngrok-free.app/trade', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(answers),
+  });
+  const data = await response.data;
+  console.log(data);
+}
   useEffect(() => {
     if (isCompleted) {
       localStorage.setItem('questionnaireAnswers', JSON.stringify(answers));
+      uploadQuestions()
       setTimeout(() => {
         router.push('/choiceform');
       }, 1000);
