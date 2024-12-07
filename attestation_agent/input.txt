@@ -1,0 +1,1 @@
+{"agent_id": "agent_123", "trade_details": {"asset": "BTC", "amount": 150000, "trade_price": 28000, "market_price": 29000}, "user_reasoning": "I believe the market is poised for a breakout.", "user_history": {"past_trades": [{"asset": "BTC", "amount": 50000, "trade_price": 27000}], "trade_frequency": 8}, "market_data": {"volatility": 0.4, "market_conditions": "Bullish"}}

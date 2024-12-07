@@ -1,0 +1,49 @@
+[
+    {
+      "id": 1,
+      "question": "What is your primary goal for using this trading bot?",
+      "type": "text"
+    },
+    {
+      "id": 2,
+      "question": "  What percentage of your portfolio would you like the bot to trade?",
+      "type": "text"
+    },
+    {
+        "id": 3,
+        "question": "What is the maximum loss (in percentage or amount) you’re willing to tolerate on a single swap?",
+        "type": "text"
+      },{
+        "id": 4,
+        "question": "What is the minimum profit (in percentage or amount) you’d like the bot to secure before completing a swap?",
+        "type": "text"
+      },{
+        "id": 5,
+        "question":   "How frequently should the bot execute trades?",
+        "type": "text"
+      },{
+        "id": 6,
+        "question": "Do you prefer swapping into stablecoins during high market volatility? If yes, which ones?",
+        "type": "text"
+      },
+      {
+        "id": 7,
+        "question": "Are there any specific cryptocurrencies or trading pairs you’d like the bot to prioritize or avoid?",
+        "type": "text"
+      },{
+
+        "id": 8,
+        "question": "What type of market behavior do you want the bot to focus on?",
+        "type": "text"
+      },
+      {
+        "id": 9,
+        "question": "If you had to choose, would you prioritize maximizing profits, minimizing risk, or balancing both?",
+        "type": "text"
+      },
+      {
+        "id": 10,
+        "question": " How would you feel if the bot temporarily performed worse than expected?",
+        "type": "text"
+      }
+  ]

@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@lit-protocol/constants": "^7.0.1",
+    "@lit-protocol/contracts-sdk": "^7.0.1",
+    "@lit-protocol/lit-auth-client": "^7.0.1",
+    "@lit-protocol/lit-node-client": "^7.0.1",
+    "@tavily/core": "^0.0.2",
+    "openai": "^4.76.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1"
+  }
+}

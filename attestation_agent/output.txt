@@ -1,0 +1,1 @@
+{"agent_id": "agent_123", "reputation_score": 85, "is_anomaly": true}

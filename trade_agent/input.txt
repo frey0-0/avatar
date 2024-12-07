@@ -1,0 +1,1 @@
+{"user_persona": ["I prefer low-risk investments."], "user_history": [{"transaction_id": "0xi23pzohen1yazv6fvc1gy4al3h0mwnlji6fs2cxb", "timestamp": "2024-09-01 01:52:54", "transaction_type": "swap", "token": "DOGE", "amount": "0.36", "protocol": "SushiSwap"}]}
