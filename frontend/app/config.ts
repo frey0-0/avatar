@@ -36,3 +36,6 @@ export const config = getDefaultConfig({
   ],
   ssr: true,
 })
+
+export const TRADE_TO_ATTEST=5000
+export const CHART_REFRESH_INTERVAL=2000

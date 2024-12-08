@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cookieToInitialState, WagmiProvider } from "wagmi";
-import { config } from "./wagmi";
+import { config } from "./config";
 import { headers } from "next/headers";
 import Navbar from "./components/Navbar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

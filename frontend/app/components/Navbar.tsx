@@ -49,7 +49,7 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center space-x-4">
             <NavLink href="/questionnaire">Take Survey</NavLink>
-            <NavLink href="#about">About</NavLink>
+            <NavLink href="/dex">Dex</NavLink>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
