@@ -19,10 +19,11 @@ import { setLoggingEnabled } from "viem/actions";
 
 interface Token {
   id: string;
-  name: string;
+  asset: string;
   symbol: string;
-  price: number;
-  change24h: number;
+  market_price: number;
+  trade_price: number;
+  rating:number;
 }
 // Type for the data fetched from Binance API (Kline data)
 type KlineData = [
@@ -40,30 +41,22 @@ type KlineData = [
   string
 ];
 
-const mockTokens: Token[] = [
-  { id: "1", name: "Bitcoin", symbol: "BTC", price: 43000, change24h: 2.5 },
-  { id: "2", name: "Ethereum", symbol: "ETH", price: 2200, change24h: 1.8 },
-  { id: "3", name: "Solana", symbol: "SOL", price: 120, change24h: 5.2 },
-];
 
-const mockChartData = [
-  { time: "00:00", price: 100 },
-  { time: "04:00", price: 120 },
-  { time: "08:00", price: 110 },
-  { time: "12:00", price: 130 },
-  { time: "16:00", price: 140 },
-  { time: "20:00", price: 135 },
-];
-
-const TokenList = () => {
-  const [tokens, setTokens] = useState([
-    { name: "Token A", priceFeed: "$10", marketplacePrice: "$9", rating: 4 },
-    { name: "Token B", priceFeed: "$20", marketplacePrice: "$18", rating: 5 },
-    { name: "Token C", priceFeed: "$5", marketplacePrice: "$4", rating: 3 },
-    { name: "Token D", priceFeed: "$15", marketplacePrice: "$14", rating: 2 },
-  ]);
+const TokenList = ({ tokenData }: { tokenData: any }) => {
+  const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(false);
-
+  console.log(tokenData);
+  useEffect(() => {
+    if (tokenData) {
+      const newTokens = tokenData.map((token: any) => ({
+        name: token.trade_details.asset,
+        priceFeed: token.trade_details.trade_price,
+        market_price: token.trade_details.market_price,
+        rating: 0,
+      }));
+      setTokens(newTokens);
+    }
+  }, []);
   const handleRatingChange = (index: number, rating: number) => {
     setLoading(true);
     const updatedTokens = [...tokens];
@@ -99,13 +92,13 @@ const TokenList = () => {
           className="flex items-center justify-between p-4 border rounded-lg bg-gray-800"
         >
           <span className="text-xl text-white font-semibold flex-1">
-            {token.name}
+            {token.asset}
           </span>
           <span className="text-lg text-gray-300 flex-1">
-            {token.priceFeed}
+            {token.trade_price}
           </span>
           <span className="text-lg text-gray-300 flex-1">
-            {token.marketplacePrice}
+            {token.market_price}
           </span>
           <div className="flex items-center flex-1">
             {[...Array(5)].map((_, starIndex) => (
@@ -144,6 +137,7 @@ export default function DexPage() {
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chartData, setChartData] = useState<{ data: number[] } | null>(null);
+  const [tokenData, setTokenData] = useState<any>(null);
 
   const handleTokenClick = (token: Token) => {
     setSelectedToken(token);
@@ -196,29 +190,19 @@ export default function DexPage() {
     await fetchData();
     const answers = localStorage.getItem("answers");
     try {
-      const response = await axios.post(
-        "https://localhost:5000/trade",
-        {
-          answers: answers,
-          priceFeed: JSON.stringify(chartData),
-        }
-      );
+      const response = await axios.post("https://localhost:5000/trade", {
+        answers: answers,
+        priceFeed: JSON.stringify(chartData),
+      });
       const data = response.data;
       console.log(data);
+      setTokenData(data);
       await attestAPI(data);
     } catch (error) {
       console.error("Error uploading questions:", error);
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedToken(null);
-  };
-
-  const handleRatingChange = (rating: number) => {
-    console.log(`Rating changed to ${rating}`);
-  };
   useEffect(() => {
     uploadQuestions();
   }, [TRADE_TO_ATTEST]);
@@ -255,7 +239,7 @@ export default function DexPage() {
           </List>
         </Paper> */}
 
-        <TokenList />
+        <TokenList tokenData={tokenData} />
       </div>
 
       {/* <Modal
