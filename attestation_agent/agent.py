@@ -277,6 +277,7 @@ def attest():
     # average_score = sum_score / 5
 
     _, score, _ = process_trade(1, "agent-" + str(uuid.uuid4()))
+    sum_score += score
     average_score = sum_score
     outlier = True
     if average_score > 50:
