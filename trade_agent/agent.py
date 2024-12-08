@@ -12,7 +12,7 @@ import flask
 import json
 
 app = flask.Flask(__name__)
-CORS(app, resources={r"/trade": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/trade": {"origins": "http://localhost:3001"}})
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 
@@ -158,8 +158,11 @@ import requests
 @app.route("/trade", methods=["POST"])
 def trade():
     data = {}
-    data["user_persona"] = flask.request.json["body"]["answers"]
-    data["price_feed"] = flask.request.json["body"]["price_feed"]
+    print(flask.request.json)
+    data["user_persona"] = flask.request.json["answers"]
+    data["price_feed"] = flask.request.json["price_feed"]
+    if data["price_feed"] == None:
+        return {"error": "Price feed not found"}
     data["user_history"] = requests.get(
         "http://localhost:6000/fetch_closest_trades?symbol=ETH"
     ).json()

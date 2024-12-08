@@ -169,6 +169,7 @@ export default function DexPage() {
       const response = await axios.get<KlineData[]>(url, { params });
       const processedData = processETHData(response.data);
       setChartData(processedData);
+      return processedData;
     } catch (error) {
       console.error("Error fetching ETH prices from Binance:", error);
     }
@@ -179,30 +180,60 @@ export default function DexPage() {
       data: data,
     };
     try {
-      const response = await axios.post("https://localhost:8000/attest", body);
-      console.log(response.data);
+      const response = await axios.post("http://localhost:8000/attest", body);
+      console.log("attest api response:", response.data);
     } catch (error) {
       console.error("Error attesting data:", error);
     }
   };
 
   const uploadQuestions = async () => {
-    await fetchData();
-    const answers = localStorage.getItem("answers");
     try {
-      const response = await axios.post("https://localhost:5000/trade", {
+      // Fetch the price feed (ensure fetchData is working as expected)
+      const price_feed = await fetchData();
+      if (!price_feed || !price_feed.data) {
+        console.error("Price feed data is not available.");
+        return;
+      }
+  
+      // Retrieve answers from localStorage and handle potential null value
+      const answers = localStorage.getItem("answers");
+      if (!answers) {
+        console.error("No answers found in localStorage.");
+        return;
+      }
+  
+      console.log(chartData);
+      let body: any = {
         answers: answers,
-        priceFeed: JSON.stringify(chartData),
+        price_feed: JSON.stringify(price_feed.data),
+      };
+      const response = await axios.post("http://localhost:5000/trade", body, {
+        headers: {
+          "Content-Type": "application/json",  // Explicitly set content-type
+        },
       });
+      
+  
       const data = response.data;
       console.log(data);
       setTokenData(data);
       await attestAPI(data);
+  
     } catch (error) {
       console.error("Error uploading questions:", error);
     }
   };
+  
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedToken(null);
+  };
+
+  const handleRatingChange = (rating: number) => {
+    console.log(`Rating changed to ${rating}`);
+  };
   useEffect(() => {
     uploadQuestions();
   }, [TRADE_TO_ATTEST]);

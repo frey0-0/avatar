@@ -7,6 +7,7 @@ from cdp import Wallet
 from cdp_langchain.tools import CdpTool
 from pydantic import BaseModel, Field
 from typing import Tuple
+from flask_cors import CORS
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -16,6 +17,7 @@ import uuid
 
 app = flask.Flask(__name__)
 
+CORS(app, resources={r"/attest": {"origins": "http://localhost:3001"}})
 
 class TradeInput(BaseModel):
     trade_details: dict = Field(
@@ -170,7 +172,7 @@ def analyse_trade(trade_details: dict, user_history: dict, market_data: dict):
     market_price = trade_details.get("market_price", 0)
     trade_price = trade_details.get("trade_price", 0)
     asset_volatility = market_data.get("volatility", 0)
-    trade_frequency = user_history.get("trade_frequency", 0)
+    # trade_frequency = user_history.get("trade_frequency", 0)
 
     # Check if trade amount exceeds threshold
     if trade_amount > anomaly_thresholds["trade_amount"]:
@@ -181,10 +183,6 @@ def analyse_trade(trade_details: dict, user_history: dict, market_data: dict):
         price_deviation = abs(trade_price - market_price) / market_price
         if price_deviation > anomaly_thresholds["price_deviation"]:
             return True
-
-    # Check if trade frequency exceeds threshold
-    if trade_frequency > anomaly_thresholds["trade_frequency"]:
-        return True
 
     # Check if asset volatility exceeds threshold
     if asset_volatility > anomaly_thresholds["volatility_threshold"]:
@@ -202,10 +200,13 @@ def process_trade(temperature: float, agent_id: str) -> Tuple[str, int, bool]:
         data = file.read()
 
     # convert this to a dictionary
-    trade_input = TradeInput.model_validate_json(data)
-    trade_details = trade_input.trade_details
-    user_reasoning = trade_input.user_reasoning
-    market_data = trade_input.market_data
+    data = json.loads(data)
+    data = data["data"]
+    # breakpoint()
+    # trade_input = TradeInput.model_validate_json(data)
+    trade_details = data["trade_details"]
+    user_reasoning = data["user_reasoning"]
+    market_data = data["market_data"]
     import requests
 
     user_history = requests.get(
@@ -266,18 +267,18 @@ def attest():
     with open("input.txt", "w") as file:
         file.write(json.dumps(data))
 
-    response = ask_agent("Process the trade")
+    # response = ask_agent("Process the trade")
     temps = [0.2, 0.4, 0.6, 0.8, 1.0]
     sum_score = 0
-    for temp in temps:
-        agent_id = "agent-" + str(uuid.uuid4())
-        _, score, _ = process_trade(temp, agent_id)
-        sum_score += score
-    average_score = sum_score / 5
+    # for temp in temps:
+    #     agent_id = "agent-" + str(uuid.uuid4())
+    #     _, score, _ = process_trade(temp, agent_id)
+    #     sum_score += score
+    # average_score = sum_score / 5
 
-    # _, score, _ = process_trade(0, "agent-" + str(uuid.uuid4()))
-    # average_score = sum_score
-
+    _, score, _ = process_trade(1, "agent-" + str(uuid.uuid4()))
+    average_score = sum_score
+    outlier = True
     if average_score > 50:
         outlier = False
     res = {"average_score": average_score, "outlier": outlier}
