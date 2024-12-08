@@ -43,7 +43,7 @@ async function getAveragePrices(
 
 	try {
 		const response = await fetch(`${url}?${params.toString()}`);
-		const data = await response.json();
+		const data: any = await response.json();
 		const averagePrices: number[] = [];
 		data.forEach((kline: any) => {
 			const openPrice = parseFloat(kline[1]);
@@ -179,6 +179,7 @@ let threshold: number | null = null;
 
 getEthereumPrediction()
 	.then((result) => {
+		console.log("Ethereum prediction:", result);
 		threshold = result ?? 0;
 	})
 	.catch((error) => {

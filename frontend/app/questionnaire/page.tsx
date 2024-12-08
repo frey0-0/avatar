@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import BackgroundAnimation from "../components/Background";
-import questionsData from '../questions.json';
+import axios from "axios";
+import questionsData from "../questions.json";
+import { ChartData } from "chart.js";
 
 interface Question {
   id: number;
@@ -13,21 +15,37 @@ interface Question {
   required?: boolean;
 }
 
+// Type for the data fetched from Binance API (Kline data)
+type KlineData = [
+  number,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string
+];
+
 const questions: Question[] = questionsData;
 
 export default function Questionnaire() {
   const router = useRouter();
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<string[]>([]);
   const [textInput, setTextInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleNext = () => {
     if (textInput.trim() !== "") {
-      setAnswers((prev) => ({ ...prev, [currentQuestion]: textInput }));
+      setAnswers((prev) => [...prev, textInput]);
       setTextInput("");
-      
+
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion((prev) => prev + 1);
         inputRef.current?.focus();
@@ -43,15 +61,29 @@ export default function Questionnaire() {
       setTextInput(answers[currentQuestion - 1] || "");
     }
   };
-
+const uploadQuestions = async () => {
+  console.log(answers);
+  const response = await axios.post('http://localhost:5000/trade', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(answers),
+  });
+  const data = await response.data;
+  console.log(data);
+}
   useEffect(() => {
     if (isCompleted) {
-      localStorage.setItem('questionnaireAnswers', JSON.stringify(answers));
+      localStorage.setItem("answers", JSON.stringify(answers));
+      // uploadQuestions();
       setTimeout(() => {
-        router.push('/choiceform');
+        router.push("/choiceform");
       }, 1000);
     }
   }, [isCompleted, answers, router]);
+
+ 
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 flex items-center justify-center p-4 sm:p-8">

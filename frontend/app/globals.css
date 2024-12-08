@@ -177,6 +177,7 @@ body {
   margin: 0;
   /* 1 */
   line-height: inherit;
+  /* overflow: hidden; */
   /* 2 */
 }
 

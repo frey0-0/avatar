@@ -54,7 +54,7 @@ export default function ChoiceForm() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <h1 className="text-7xl font-bold mb-6 tracking-tight">
+            <h1 className="text-7xl font-bold mb-6 tracking-tight ">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-200 to-indigo-400">
                 Choose Your Path
               </span>
@@ -62,7 +62,7 @@ export default function ChoiceForm() {
             <p className="text-2xl text-blue-200/80 max-w-3xl mx-autoscann ">Select your preferred training environment</p>
           </motion.div>
 
-          <div className="flex flex-row justify-center items-stretch gap-36 ">
+          <div className="flex flex-row justify-center items-stretch gap-36 cursor-pointer ">
             {/* Virtual Environment Card */}
             <motion.div
               whileHover={{ scale: 1.02 }}

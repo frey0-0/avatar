@@ -1,14 +1,16 @@
 "use client";
 
-import { WalletDefault } from "@coinbase/onchainkit/wallet";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
-import "@coinbase/onchainkit/styles.css";
+import { useState, useEffect, useContext } from "react";
+import { Account, WalletOptions } from "./wallet-options";
+import { useAccount } from "wagmi";
+import { Web3Context } from "./providers";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { account, contract, connectWallet } = useContext(Web3Context);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +20,11 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+  const handleConnect = async () => {
+    console.log("connecting wallet");
+
+    await connectWallet();
+  };
 
   return (
     <motion.nav
@@ -42,13 +49,28 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center space-x-4">
             <NavLink href="/questionnaire">Take Survey</NavLink>
-            <NavLink href="#about">About</NavLink>
+            <NavLink href="/dex">Dex</NavLink>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="ml-6 px-8 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-shadow duration-300"
             >
-              Get Started
+              {account ? (
+                <div className="w-[146px] h-14 overflow-hidden rounded-[9px] bg-[#bafd02] items-center flex justify-center cursor-pointer">
+                  <p className="text-black text-sm font-medium">
+                    {`${account.slice(0, 6)}...${account.slice(-4)}`}
+                  </p>
+                </div>
+              ) : (
+                <div
+                  className="w-[146px] h-14 overflow-hidden rounded-[9px] bg-[#bafd02] hover:bg-[#a8e502] transition-colors items-center flex justify-center cursor-pointer"
+                  onClick={connectWallet}
+                >
+                  <button className="text-xl font-medium text-black">
+                    Connect Wallet
+                  </button>
+                </div>
+              )}
             </motion.button>
           </div>
 
@@ -105,8 +127,22 @@ export default function Navbar() {
                   className="w-full px-8 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-shadow duration-300"
                   onClick={() => setIsOpen(false)}
                 >
-                  Connect
-                  {/* <WalletDefault /> */}
+                  {account ? (
+                    <div className="w-[146px] h-14 overflow-hidden rounded-[9px] bg-[#bafd02] items-center flex justify-center cursor-pointer">
+                      <p className="text-black text-sm font-medium">
+                        {`${account.slice(0, 6)}...${account.slice(-4)}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className="w-[146px] h-14 overflow-hidden rounded-[9px] bg-[#bafd02] hover:bg-[#a8e502] transition-colors items-center flex justify-center cursor-pointer"
+                      onClick={connectWallet}
+                    >
+                      <button className="text-xl font-medium text-black">
+                        Connect Wallet
+                      </button>
+                    </div>
+                  )}
                 </motion.button>
               </div>
             </motion.div>

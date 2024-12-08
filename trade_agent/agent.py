@@ -5,13 +5,14 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 from cdp_langchain.tools import CdpTool
 from pydantic import BaseModel, Field
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Any
+from flask_cors import CORS
 
 import flask
 import json
 
 app = flask.Flask(__name__)
-
+CORS(app, resources={r"/trade": {"origins": "http://localhost:3001"}})
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 
@@ -34,22 +35,25 @@ class TradePredictionInput(BaseModel):
     user_persona: List[str] = Field(
         ..., description="User's persona, including risk tolerance, trading style, etc."
     )
-    user_history: List[Dict[str, str]] = Field(
+    user_history: List[Dict[Any, Any]] = Field(
         ..., description="User's past trading history, including trades and patterns."
     )
 
-import json
+
 def analyze_and_generate_trade() -> TradePredictionOutput:
     """
     Use a single LLM prompt to analyze the user's persona, past trades, and fetch market data,
     then generate a trade based on the combined analysis.
     """
+    import json
+
     with open("input.txt", "r") as f:
-        data = f.read()
-    print(data)
-    data = TradePredictionInput.model_validate_json(data)
-    user_persona = data.user_persona
-    user_history = data.user_history
+        data = json.loads(f.read())
+    data["user_persona"] = json.loads(data["user_persona"])
+    # data = TradePredictionInput.model_validate_json(data)
+    user_persona = data["user_persona"]
+    user_history = data["user_history"]
+    price_feed = data["price_feed"]
     prompt = f"""  
         You are a trading expert. Analyze the following user's persona and past trading history,   
         then generate a trade suggestion based on the analysis and current market data. Use WEB SEARCH to fetch the current market trending and data to make a better trade suggestion.
@@ -58,7 +62,10 @@ def analyze_and_generate_trade() -> TradePredictionOutput:
         {user_persona}  
   
         Past Trades:  
-        {user_history}  
+        {user_history} 
+
+        Current Price Feed:
+        {price_feed}
   
         Instructions:  
         1. Infer the user's trading persona, including their risk tolerance, preferred trading style, and decision-making approach.  
@@ -66,7 +73,8 @@ def analyze_and_generate_trade() -> TradePredictionOutput:
         3. Simulate fetching current market data for the most traded token, including price, sentiment, and volatility.  
         4. Generate trade details, including the asset, amount, market price, and trade price (slightly deviated from market price).  
         5. Provide reasoning for why the user would make this trade based on their persona, past trades, and market data.  
-  
+
+        THE PERSONA OF THE USER SHOULD BE THE UTMOST IMPORTANT FACTOR IN DETERMINING THE TRADE SUGGESTION. DO NOT GIVE VERY HIGH TRADES LIKE GREATER THAN 1500 USD.
         Return the results in the following JSON FORMAT WITHOUT BACKTICKS IN A SINGLE LINE:  
         {{  
             "persona_analysis": "string",  
@@ -144,18 +152,28 @@ def ask_agent(question: str):
             print(chunk["tools"]["messages"][0].content)
 
 
+import requests
+
+
 @app.route("/trade", methods=["POST"])
 def trade():
-    data = flask.request.json
-
+    data = {}
+    print(flask.request.json)
+    data["user_persona"] = flask.request.json["answers"]
+    data["price_feed"] = flask.request.json["price_feed"]
+    if data["price_feed"] == None:
+        return {"error": "Price feed not found"}
+    data["user_history"] = requests.get(
+        "http://localhost:6000/fetch_closest_trades?symbol=ETH"
+    ).json()
     with open("input.txt", "w") as f:
         f.write(json.dumps(data))
 
-    response = ask_agent("Suggest a trade for the user")
+    # response = ask_agent("Suggest a trade for the user")
     analyze_and_generate_trade()
     with open("output.txt", "r") as f:
         data = f.read()
-        
+
     res = json.loads(data)
     return res
 

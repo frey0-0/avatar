@@ -7,24 +7,24 @@ from cdp import Wallet
 from cdp_langchain.tools import CdpTool
 from pydantic import BaseModel, Field
 from typing import Tuple
+from flask_cors import CORS
+
+from concurrent.futures import ThreadPoolExecutor
 
 import flask
 import json
+import uuid
 
 app = flask.Flask(__name__)
 
+CORS(app, resources={r"/attest": {"origins": "http://localhost:3001"}})
 
 class TradeInput(BaseModel):
-    agent_id: str = Field(..., description="Agent ID")
     trade_details: dict = Field(
         ..., description="Details of the trade, including asset, amount, price, etc."
     )
     user_reasoning: str = Field(
         ..., description="The user's reasoning behind the trade."
-    )
-    user_history: dict = Field(
-        ...,
-        description="Historical trading data of the user, including past trades and patterns.",
     )
     market_data: dict = Field(
         ..., description="Current market data for the asset being traded."
@@ -38,15 +38,14 @@ class AttestInput(BaseModel):
 
 
 anomaly_thresholds = {
-    "trade_amount": 100000,  # Example: Flag trades over 100,000 units as anomalies
-    "price_deviation": 0.2,  # Example: Flag trades with >20% deviation from market price
-    "trade_frequency": 10,  # Example: Flag if user trades more than 10 times in a day
-    "volatility_threshold": 0.5,  # Example: Flag trades involving assets with >50% volatility
+    "trade_amount": 100000,
+    "price_deviation": 0.2,
+    "trade_frequency": 10,
+    "volatility_threshold": 0.5,
 }
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 
-# Initialize CDP AgentKit wrapper
 cdp = CdpAgentkitWrapper()
 
 # Create toolkit from wrapper
@@ -142,7 +141,7 @@ def attest_trade(agent_id: str, reputation: int, outlier: bool):
     import requests
     import json
 
-    url = "http://localhost:3000/attest"
+    url = "http://localhost:9000/attest"
 
     headers = {"Content-Type": "application/json"}
 
@@ -173,7 +172,7 @@ def analyse_trade(trade_details: dict, user_history: dict, market_data: dict):
     market_price = trade_details.get("market_price", 0)
     trade_price = trade_details.get("trade_price", 0)
     asset_volatility = market_data.get("volatility", 0)
-    trade_frequency = user_history.get("trade_frequency", 0)
+    # trade_frequency = user_history.get("trade_frequency", 0)
 
     # Check if trade amount exceeds threshold
     if trade_amount > anomaly_thresholds["trade_amount"]:
@@ -185,31 +184,34 @@ def analyse_trade(trade_details: dict, user_history: dict, market_data: dict):
         if price_deviation > anomaly_thresholds["price_deviation"]:
             return True
 
-    # Check if trade frequency exceeds threshold
-    if trade_frequency > anomaly_thresholds["trade_frequency"]:
-        return True
-
     # Check if asset volatility exceeds threshold
     if asset_volatility > anomaly_thresholds["volatility_threshold"]:
         return True
     return False
 
 
-def process_trade() -> Tuple[str, int, bool]:
+def process_trade(temperature: float, agent_id: str) -> Tuple[str, int, bool]:
     """
     Process the trade and return whether it is an anomaly and the reputation score.
     """
+    llm.temperature = temperature
     # read the input.txt file from the same directory
     with open("input.txt", "r") as file:
         data = file.read()
 
     # convert this to a dictionary
-    trade_input = TradeInput.model_validate_json(data)
-    trade_details = trade_input.trade_details
-    user_reasoning = trade_input.user_reasoning
-    user_history = trade_input.user_history
-    market_data = trade_input.market_data
-    agent_id = trade_input.agent_id
+    data = json.loads(data)
+    data = data["data"]
+    # breakpoint()
+    # trade_input = TradeInput.model_validate_json(data)
+    trade_details = data["trade_details"]
+    user_reasoning = data["user_reasoning"]
+    market_data = data["market_data"]
+    import requests
+
+    user_history = requests.get(
+        "http://localhost:6000/fetch_closest_trades?symbol=ETH"
+    ).json()
 
     # Analyze the trade for anomalies
     is_anomaly = analyse_trade(trade_details, user_history, market_data)
@@ -223,17 +225,6 @@ def process_trade() -> Tuple[str, int, bool]:
 
     response = attest_trade(agent_id, reputation_score, is_anomaly)
     print("attest_trade", response)
-
-    with open("output.txt", "w") as file:
-        file.write(
-            json.dumps(
-                {
-                    "agent_id": agent_id,
-                    "reputation_score": reputation_score,
-                    "is_anomaly": is_anomaly,
-                }
-            )
-        )
 
     return agent_id, reputation_score, is_anomaly
 
@@ -276,15 +267,24 @@ def attest():
     with open("input.txt", "w") as file:
         file.write(json.dumps(data))
 
-    response = ask_agent("Process the trade")
-    process_trade()
-    # pick up the output from the output.txt file
-    with open("output.txt", "r") as file:
-        data = file.read()
+    # response = ask_agent("Process the trade")
+    temps = [0.2, 0.4, 0.6, 0.8, 1.0]
+    sum_score = 0
+    # for temp in temps:
+    #     agent_id = "agent-" + str(uuid.uuid4())
+    #     _, score, _ = process_trade(temp, agent_id)
+    #     sum_score += score
+    # average_score = sum_score / 5
 
-    res = json.loads(data)
+    _, score, _ = process_trade(1, "agent-" + str(uuid.uuid4()))
+    sum_score += score
+    average_score = sum_score
+    outlier = True
+    if average_score > 50:
+        outlier = False
+    res = {"average_score": average_score, "outlier": outlier}
     return res
 
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(port=8000)

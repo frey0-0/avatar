@@ -62,7 +62,7 @@ app.post("/attest", async (req, res) => {
 });  
 
 // Start the server  
-const PORT = 3000;  
+const PORT = 9000;  
 app.listen(PORT, () => {  
   console.log(`Server is running on http://localhost:${PORT}`);  
 });  
