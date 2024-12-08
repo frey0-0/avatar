@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDebugValue, useEffect, useState } from "react";
 import {
   Modal,
   Box,
@@ -23,7 +23,7 @@ interface Token {
   symbol: string;
   market_price: number;
   trade_price: number;
-  rating:number;
+  rating: number;
 }
 // Type for the data fetched from Binance API (Kline data)
 type KlineData = [
@@ -41,22 +41,38 @@ type KlineData = [
   string
 ];
 
-
 const TokenList = ({ tokenData }: { tokenData: any }) => {
-  const [tokens, setTokens] = useState<Token[]>([]);
+  const [tokens, setTokens] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-  console.log(tokenData);
   useEffect(() => {
-    if (tokenData) {
-      const newTokens = tokenData.map((token: any) => ({
-        name: token.trade_details.asset,
-        priceFeed: token.trade_details.trade_price,
-        market_price: token.trade_details.market_price,
+    const tokensd=[
+      {
+        asset:"ETH",
+        price_feed:"$4005",
+        market_price:"$4000",
+        rating:0}
+    ]
+    // setTokens(tokensd);
+
+  }, [tokenData]);
+  setTimeout(() => {
+    const tokensd=[
+      {
+        asset:"ETH",
+        price_feed:"$4005",
+        market_price:"$4000",
+        rating:0}
+    ]
+    setTokens((prev) => [
+      ...prev,
+      {
+        asset: "ETH",
+        price_feed: "$4005",
+        market_price: "$4000",
         rating: 0,
-      }));
-      setTokens(newTokens);
-    }
-  }, []);
+      },
+    ]);
+  }, 10000);
   const handleRatingChange = (index: number, rating: number) => {
     setLoading(true);
     const updatedTokens = [...tokens];
@@ -86,7 +102,7 @@ const TokenList = ({ tokenData }: { tokenData: any }) => {
         <span className="flex-1">Marketplace Price</span>
         <span className="flex-1">Rating</span>
       </div>
-      {tokens.map((token, index) => (
+      {tokens?.map((token, index) => (
         <div
           key={index}
           className="flex items-center justify-between p-4 border rounded-lg bg-gray-800"
@@ -119,14 +135,7 @@ const TokenList = ({ tokenData }: { tokenData: any }) => {
             ))}
             <span className="text-lg text-gray-300 ml-2">{token.rating}</span>
           </div>
-          <div className="flex space-x-4">
-            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-              Bought
-            </button>
-            <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-              Sold
-            </button>
-          </div>
+         
         </div>
       ))}
     </div>
@@ -217,7 +226,29 @@ export default function DexPage() {
   
       const data = response.data;
       console.log(data);
-      setTokenData(data);
+      let tokenData = localStorage.getItem("tokenData");
+    var tokenDataArr = tokenData ? JSON.parse(tokenData) : [];
+    if(tokenData){
+
+      if (tokenData.length > 0) {
+        tokenDataArr.push({
+          asset: data.asset,
+          trade_price: data.trade_price,
+          market_price: data.market_price,
+          rating: 0,
+        });
+      } else {
+        tokenDataArr = [{
+          asset: data.asset,
+          trade_price: data.trade_price,
+          market_price: data.market_price,
+          rating: 0,
+        }];
+      }
+    }
+
+  // Update localStorage with the new tokenData
+  localStorage.setItem("tokenData", JSON.stringify(tokenDataArr));
       await attestAPI(data);
   
     } catch (error) {
