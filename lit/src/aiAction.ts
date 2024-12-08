@@ -1,5 +1,31 @@
 // @ts-nocheck
 import { PrismaClient } from "@prisma/client";
+import axios from "axios";
+
+interface MarketData {
+	price: number;
+	sentiment: string;
+	volatility: number;
+}
+
+interface TradeDetails {
+	asset: string;
+	amount: number;
+	market_price: number;
+	trade_price: number;
+}
+
+interface TradePredictionInput {
+	user_persona: string[];
+	user_history: { [key: string]: string }[];
+}
+
+interface TradePredictionOutput {
+	agent_id: string;
+	trade_details: TradeDetails;
+	user_reasoning: string;
+	market_data: MarketData;
+}
 
 const _aiActionCode = async () => {
 	try {
@@ -81,18 +107,37 @@ const _aiActionCode = async () => {
 		amount_threshold = 1 + (overallRating - 3) / 10;
 		if (lossRatio > 0.5) amount_threshold *= 1 - lossRatio;
 
-		const prompt = `Given the current Yellowstone network conditions:
-        - Gas Price: ${metrics.gasPrice} gwei
-        - Network Load: ${metrics.networkLoad}
-        - Transactions in last block: ${metrics.transactionCount}
-        
-        Generate a suitable gwei amount to send in a transaction. The amount should be between 1 and 40 gwei.
-        Consider the following:
-        - If network load is High, suggest lower amounts
-        - If gas price is high (>50 gwei), suggest lower amounts
-        - If conditions are favorable (low load, low gas), you can suggest higher amounts
-        
-        Return in JSON format: { "amount": number, "reasoning": "string" }`;
+		const prompt = `You are a trading expert. Analyze the following user's persona and past trading history, then generate a trade suggestion based on the analysis and current market data.
+
+User Persona: ${JSON.stringify(userInput.user_persona)}
+
+Past Trades: ${JSON.stringify(userInput.user_history)}
+
+Instructions:
+1. Infer the user's trading persona, including their risk tolerance, preferred trading style, and decision-making approach.
+2. Identify the most traded token and protocol from the user's past trades.
+3. Simulate fetching current market data for the most traded token, including price, sentiment, and volatility.
+4. Generate trade details, including the asset, amount, market price, and trade price (slightly deviated from market price).
+5. Provide reasoning for why the user would make this trade based on their persona, past trades, and market data.
+
+Return the results in the following JSON FORMAT WITHOUT BACKTICKS IN A SINGLE LINE:
+{
+  "persona_analysis": "string",
+  "most_traded_token": "string",
+  "most_used_protocol": "string",
+  "market_data": {
+    "price": float,
+    "sentiment": "string",
+    "volatility": float
+  },
+  "trade_details": {
+    "asset": "string",
+    "amount": float,
+    "market_price": float,
+    "trade_price": float
+  },
+  "user_reasoning": "string"
+}`;
 
 		const openAIResponse = await LitActions.runOnce(
 			{ waitForResponse: true, name: "AI_Decision" },
@@ -143,19 +188,36 @@ const _aiActionCode = async () => {
 			throw new Error(`Failed to parse OpenAI response: ${error.message}`);
 		}
 
-		if (!decision.amount || !decision.reasoning) {
-			throw new Error("Invalid decision format from OpenAI");
+		// Validate the structure and contents of the OpenAI response
+		if (
+			!decision.trade_details ||
+			!decision.market_data ||
+			!decision.user_reasoning
+		) {
+			throw new Error(
+				"Invalid decision format from OpenAI. Missing required fields."
+			);
 		}
 
-		const baseAmount = parseFloat(decision.amount);
+		const { trade_details, market_data, user_reasoning } = decision;
+
+		const baseAmount = parseFloat(trade_details.amount);
 		if (isNaN(baseAmount)) {
-			throw new Error("Invalid amount value from OpenAI");
+			throw new Error("Invalid amount value in trade details from OpenAI");
 		}
 
-		let reasoning = decision.reasoning;
+		if (
+			typeof market_data.price !== "number" ||
+			typeof market_data.volatility !== "number" ||
+			typeof market_data.sentiment !== "string"
+		) {
+			throw new Error("Invalid market data format from OpenAI");
+		}
+
+		let reasoning = user_reasoning;
 		let requiresVerification = false;
 		let urgency = "medium";
-		const shouldTransact = true;
+		let shouldTransact = true;
 
 		if (baseAmount > parseFloat(amount_threshold)) {
 			requiresVerification = true;
@@ -164,34 +226,43 @@ const _aiActionCode = async () => {
 		}
 
 		if (metrics.networkLoad === "High") {
-			reasoning += "\n⚠️ High network congestion but proceeding.";
+			reasoning +=
+				"\n⚠️ High network congestion - potential delays but proceeding.";
 		} else if (metrics.networkLoad === "Low") {
 			urgency = "high";
-			reasoning += "\n✅ Network congestion low.";
+			reasoning +=
+				"\n✅ Network congestion is low - favorable for transactions.";
 		}
 
 		if (metrics.gasPrice > 50) {
-			reasoning += "\n Gas prices are high.";
+			reasoning += "\n⚠️ Gas prices are high - consider delaying transactions.";
 			urgency = "low";
 		} else if (metrics.gasPrice < 20) {
 			urgency = "high";
-			reasoning += "\n✅ Gas prices are favorable.";
+			reasoning +=
+				"\n✅ Gas prices are favorable - optimal time for transactions.";
 		}
 
-		reasoning += `\nCurrent conditions:
-            - Gas Price: ${metrics.gasPrice} gwei
-            - Network Load: ${metrics.networkLoad}
-            - Transactions in last block: ${metrics.transactionCount}
-            - Amount to send: ${baseAmount} gwei
-            - Requires Verification: ${requiresVerification}`;
+		reasoning += `\n### Current Trading Conditions:
+- Gas Price: ${metrics.gasPrice} gwei
+- Network Load: ${metrics.networkLoad}
+- Transactions in Last Block: ${metrics.transactionCount}
+- Proposed Trade Amount: ${baseAmount} gwei
+- Requires Verification: ${requiresVerification ? "Yes" : "No"}`;
 
 		const response = {
 			shouldTransact,
-			amount: baseAmount.toString(),
+			amount: baseAmount.toFixed(2), 
 			reasoning,
 			urgency,
 			requiresVerification,
-			metrics,
+			metrics: {
+				gasPrice: metrics.gasPrice,
+				networkLoad: metrics.networkLoad,
+				transactionCount: metrics.transactionCount,
+			},
+			trade_details,
+			market_data,
 		};
 
 		Lit.Actions.setResponse({ response: JSON.stringify(response) });

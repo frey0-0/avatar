@@ -132,7 +132,6 @@ async function processTrade(tradeInput: TradeInput): Promise<TradeOutput> {
       Object.assign(anomalyThresholds, thresholds);
     } catch (error) {
       console.error('Error setting anomaly thresholds:', error);
-      // If parsing fails, keep the default thresholds
     }
   }
   async function attestTrade(agentId: string, reputation: number, outlier: boolean): Promise<void> {

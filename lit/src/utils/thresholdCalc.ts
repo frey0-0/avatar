@@ -4,13 +4,18 @@ import OpenAI from "openai";
 interface TavilySearchResponse {
 	results: { content: string }[];
 }
+declare var process: {
+	env: {
+		TAVILY_API_KEY: string;
+		OPENAI_API_KEY: string;
+	};
+};
 
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
 const apiKey = process.env.OPENAI_API_KEY;
 const openai = new OpenAI({
-	apiKey: apiKey,
-});
+	apiKey:process.env.OPENAI_API_KEY,});
 
 async function getTavilyPrediction(
 	prompt: string
@@ -184,7 +189,7 @@ getEthereumPrediction()
 	})
 	.catch((error) => {
 		console.error("Error fetching Ethereum prediction:", error);
-		threshold = 0; 
+		threshold = 0;
 	});
 
 export default threshold;
