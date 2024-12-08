@@ -1,4 +1,8 @@
 {
+  "type": "module",
+  "scripts": {
+    "start": "ts-node src/utils/thresholdCalc.ts"
+  },
   "dependencies": {
     "@lit-protocol/constants": "^7.0.1",
     "@lit-protocol/contracts-sdk": "^7.0.1",
@@ -8,6 +12,9 @@
     "openai": "^4.76.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.1"
+    "@types/node": "^22.10.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

@@ -61,7 +61,18 @@ export default function Questionnaire() {
       setTextInput(answers[currentQuestion - 1] || "");
     }
   };
-  
+const uploadQuestions = async () => {
+  console.log(answers);
+  const response = await axios.post('http://localhost:5000/trade', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(answers),
+  });
+  const data = await response.data;
+  console.log(data);
+}
   useEffect(() => {
     if (isCompleted) {
       localStorage.setItem("answers", JSON.stringify(answers));
